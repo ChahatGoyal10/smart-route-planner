@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Smart Route Planner</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#0f172a;
+}
+
+.header{
+height:60px;
+background:#020617;
+color:white;
+display:flex;
+align-items:center;
+padding:0 25px;
+border-bottom:1px solid #1f2937;
+position:relative;
+z-index:5000;
+}
+
+.app{
+display:flex;
+height:calc(100vh - 60px);
+}
+
+.sidebar{
+width:340px;
+background:#111827;
+color:white;
+padding:25px;
+overflow:auto;
+box-shadow:4px 0 18px rgba(0,0,0,0.6);
+border-right:1px solid #1f2937;
+display:flex;
+flex-direction:column;
+gap:18px;
+}
+
+.sidebar h3{
+font-size:15px;
+font-weight:600;
+color:#d1d5db;
+border-bottom:1px solid #374151;
+padding-bottom:6px;
+}
+
+#map{
+flex:1;
+height:100%;
+}
+
+input, select, textarea{
+width:100%;
+padding:11px;
+border-radius:8px;
+border:none;
+background:#1f2937;
+color:white;
+}
+
+button{
+padding:11px;
+border:none;
+border-radius:8px;
+background:#3b82f6;
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+
+button:hover{
+background:#2563eb;
+}
+
+.button-row{
+display:flex;
+gap:10px;
+}
+
+.button-row button{
+flex:1;
+}
+
+.card{
+background:#1f2937;
+padding:15px;
+border-radius:10px;
+border:1px solid #374151;
+}
+
+.history-item{
+padding:10px;
+border-radius:8px;
+background:#1f2937;
+margin-top:6px;
+}
+
+.nav-link{
+color:#9ca3af;
+cursor:pointer;
+padding:6px 10px;
+border-radius:6px;
+}
+
+.nav-link:hover{
+background:#1f2937;
+color:white;
+}
+
+.traffic-toggle{
+display:flex;
+align-items:center;
+gap:10px;
+}
+#routeInfoCard{
+position:absolute;
+top:80px;
+right:20px;
+background:#111827;
+color:white;
+padding:20px;
+border-radius:14px;
+border:1px solid #374151;
+box-shadow:0 10px 25px rgba(0,0,0,0.55);
+min-width:260px;
+max-width:300px;
+display:none;
+z-index:1000;
+
+transform:translateY(-15px);
+opacity:0;
+transition:all 0.35s ease;
+}
+
+#routeInfoCard.show{
+transform:translateY(0);
+opacity:1;
+}
+
+#routeDetails h4{
+margin:0 0 8px 0;
+font-size:16px;
+}
+
+.routeStat{
+display:flex;
+align-items:center;
+gap:8px;
+margin-top:6px;
+color:#d1d5db;
+font-size:14px;
+}
+.routeButtons{
+display:flex;
+gap:10px;
+margin-top:14px;
+}
+
+.routeButtons button{
+flex:1;
+font-size:13px;
+padding:9px;
+border-radius:8px;
+}
+.contact-overlay{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+z-index:2000;
+}
+
+.contact-box{
+background:#111827;
+padding:30px;
+border-radius:12px;
+width:350px;
+color:white;
+display:flex;
+flex-direction:column;
+gap:12px;
+box-shadow:0 8px 20px rgba(0,0,0,0.6);
+}
+
+.contact-box h2{
+margin:0;
+text-align:center;
+}
+
+.contact-box input,
+.contact-box textarea{
+width:100%;
+padding:10px;
+border-radius:8px;
+border:none;
+background:#1f2937;
+color:white;
+}
+
+.contact-box textarea{
+height:80px;
+resize:none;
+}
+
+.successMsg{
+color:#22c55e;
+font-size:14px;
+text-align:center;
+}
+
+.closeBtn{
+background:#374151;
+}
+.ratingStars span{
+font-size:20px;
+cursor:pointer;
+color:#6b7280;
+}
+.light-mode{
+background:#f3f4f6;
+color:black;
+}
+
+.light-mode .header{
+background:white;
+color:black;
+}
+
+.light-mode .sidebar{
+background:#ffffff;
+color:black;
+}
+
+.light-mode input,
+.light-mode textarea,
+.light-mode select{
+background:#e5e7eb;
+color:black;
+}
+
+.light-mode .card{
+background:white;
+color:black;
+}
+
+.light-mode .history-item{
+background:#e5e7eb;
+color:black;
+}
+#timeSlider{
+width:100%;
+margin-top:8px;
+}
+#navPanel{
+position:fixed;
+bottom:30px;
+left:50%;
+transform:translateX(-50%);
+background:#111827;
+color:white;
+padding:16px;
+border-radius:12px;
+border:1px solid #374151;
+box-shadow:0 8px 20px rgba(0,0,0,0.5);
+min-width:260px;
+display:none;
+z-index:1000;
+text-align:center;
+}
+
+#navTitle{
+font-weight:bold;
+margin-bottom:6px;
+}
+
+#navInstruction{
+color:#d1d5db;
+font-size:14px;
+}
+#toast{
+position:fixed;
+bottom:25px;
+left:50%;
+transform:translateX(-50%) translateY(20px);
+background:#111827;
+color:white;
+padding:14px 20px;
+border-radius:10px;
+border:1px solid #374151;
+box-shadow:0 6px 20px rgba(0,0,0,0.4);
+opacity:0;
+transition:all 0.3s ease;
+z-index:9999;
+font-size:14px;
+}
+
+#toast.show{
+opacity:1;
+transform:translateX(-50%) translateY(0);
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<div style="font-size:22px;font-weight:bold;">
+🧭 Smart Route Planner
+</div>
+
+<div style="margin-left:auto;display:flex;gap:20px;">
+<span class="nav-link" onclick="openRoutePlanner()">🗺 Route Planner</span>
+<span class="nav-link" onclick="openMyTravel()">⭐ My Travel</span>
+<span class="nav-link" onclick="openContact()">📩 Contact</span>
+<span class="nav-link" onclick="toggleTheme()">🌙 Theme</span>
+<span id="userEmailDisplay" class="nav-link" style="display:none;"></span>
+<span id="authButton" class="nav-link" onclick="openAuth()">👤 Login / Signup</span>
+<span id="logoutButton" class="nav-link" onclick="logout()" style="display:none;">🚪 Logout</span>
+</div>
+
+</div>
+
+<div class="app">
+
+<div class="sidebar" id="sidebarContent">
+
+<h3>Find Route</h3>
+
+<input list="cities" id="from" placeholder="Start city">
+<input list="cities" id="to" placeholder="Destination">
+
+
+
+<div class="traffic-toggle">
+<input type="checkbox" id="trafficToggle">
+<label>🚦 Simulate Traffic</label>
+</div>
+<h3>Departure Time</h3>
+
+<select id="departureTime">
+<option value="morning">☀️ Morning (6–10 AM)</option>
+<option value="afternoon">🌤 Afternoon (11–4 PM)</option>
+<option value="evening">🌆 Evening (5–9 PM)</option>
+<option value="night">🌙 Night (10–5 AM)</option>
+</select>
+
+<datalist id="cities">
+<option value="Delhi">
+<option value="Chandigarh">
+<option value="Amritsar">
+<option value="Ludhiana">
+<option value="Jalandhar">
+<option value="Jaipur">
+<option value="Udaipur">
+<option value="Jodhpur">
+<option value="Lucknow">
+<option value="Kanpur">
+<option value="Agra">
+<option value="Rohtak">
+<option value="Karnal">
+<option value="Panipat">
+<option value="Meerut">
+<option value="Gurgaon">
+<option value="Ambala">
+<option value="Patiala">
+</datalist>
+
+<div class="button-row">
+<button onclick="findRoute()">Find Route</button>
+<button onclick="clearRoute()">Clear</button>
+</div>
+
+<div id="routeResult"></div>
+<div id="routeLoading" style="display:none;margin-top:10px;color:#9ca3af;">
+⏳ Calculating route...
+</div>
+
+<div id="directionsPanel"></div>
+
+</div>
+
+<div id="map"></div>
+
+<div id="routeInfoCard">
+<div id="routeDetails"></div>
+</div>
+<div id="navPanel">
+
+<div id="navTitle">🚗 Navigation</div>
+
+<div id="navInstruction">
+Press Start Navigation
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+window.onload=function(){
+
+let savedTheme=localStorage.getItem("theme");
+
+if(savedTheme==="light"){
+document.body.classList.add("light-mode");
+}
+
+let loggedUser = localStorage.getItem("loggedUser");
+
+if(loggedUser){
+
+document.getElementById("authButton").style.display="none";
+document.getElementById("logoutButton").style.display="inline";
+
+let emailDisplay=document.getElementById("userEmailDisplay");
+emailDisplay.innerText="👤 " + loggedUser;
+emailDisplay.style.display="inline";
+
+}
+
+}
+
+/* MAP */
+
+var map=L.map('map').setView([28.61,77.23],6);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{maxZoom:19}
+).addTo(map);
+
+
+/* GLOBAL VARIABLES */
+
+let currentRoute=null;
+let startMarker=null;
+let endMarker=null;
+
+let routeCoords=[];
+let carMarker=null;
+let savedSteps=[];
+
+
+/* CAR ICON */
+
+var carIcon=L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize:[32,32],
+iconAnchor:[16,16]
+});
+
+
+/* CITY COORDINATES */
+
+var cities={
+Delhi:[28.61,77.23],
+Chandigarh:[30.73,76.77],
+Amritsar:[31.63,74.87],
+Ludhiana:[30.90,75.85],
+Jalandhar:[31.33,75.57],
+Jaipur:[26.91,75.78],
+Udaipur:[24.58,73.68],
+Jodhpur:[26.23,73.02],
+Lucknow:[26.84,80.94],
+Kanpur:[26.44,80.33],
+Agra:[27.18,78.01],
+Rohtak:[28.90,76.57],
+Karnal:[29.68,76.99],
+Panipat:[29.39,76.96],
+Meerut:[28.98,77.70],
+Gurgaon:[28.45,77.03],
+Ambala:[30.37,76.78],
+Patiala:[30.33,76.40]
+};
+
+
+/* CITY MARKERS */
+
+for(let city in cities){
+
+let marker=L.marker(cities[city]).addTo(map).bindPopup(city);
+
+marker.on("click",function(){
+
+let fromInput=document.getElementById("from");
+let toInput=document.getElementById("to");
+
+if(fromInput.value===""){
+fromInput.value=city;
+}
+else if(toInput.value===""){
+toInput.value=city;
+}
+
+});
+
+}
+
+
+/* DRAW ROUTE */
+
+async function drawRoute(route){
+
+if(currentRoute) map.removeLayer(currentRoute);
+
+let start=cities[route[0]];
+let end=cities[route[route.length-1]];
+
+let url=`https://api.openrouteservice.org/v2/directions/driving-car?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImY2ZTc2ZjA0OTM5MjQ3ZjQ5Y2FhNjU2ODRhNWE2Yzg3IiwiaCI6Im11cm11cjY0In0=&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
+
+let res=await fetch(url);
+let data=await res.json();
+
+if(!data.features){
+showToast("Route could not be loaded");
+return;
+}
+
+let feature=data.features[0];
+
+savedSteps=feature.properties.segments[0].steps;
+
+let geometry=feature.geometry.coordinates;
+
+routeCoords=geometry.map(c=>[c[1],c[0]]);
+
+let trafficToggle=document.getElementById("trafficToggle");
+let traffic = trafficToggle ? trafficToggle.checked : false;
+
+let color="red";
+let weight=6;
+let dash=null;
+
+if(!data.features){
+showToast("Route could not be loaded");
+return;
+}
+
+if(traffic){
+color="orange";
+}
+/* SHADOW */
+
+L.polyline(routeCoords,{
+color:"#000000",
+weight:12,
+opacity:0.15
+}).addTo(map);
+
+/* ROUTE BORDER (WHITE) */
+
+L.polyline(routeCoords,{
+color:"#ffffff",
+weight:10,
+opacity:0.9,
+smoothFactor:1.5
+}).addTo(map);
+
+
+/* MAIN ROUTE (RED) */
+
+currentRoute=L.polyline(routeCoords,{
+color:"#ff3b3b",
+weight:6,
+opacity:1,
+smoothFactor:1.5
+}).addTo(map);
+
+map.fitBounds(currentRoute.getBounds());
+
+if(startMarker) map.removeLayer(startMarker);
+if(endMarker) map.removeLayer(endMarker);
+
+startMarker=L.marker(start).addTo(map).bindPopup("Start").openPopup();
+endMarker=L.marker(end).addTo(map).bindPopup("Destination");
+
+}
+
+
+/* FIND ROUTE */
+
+function findRoute(){
+
+let from=document.getElementById("from").value.trim();
+let to=document.getElementById("to").value.trim();
+
+document.getElementById("routeLoading").style.display="block";
+
+if(from===""||to==="") return;
+
+let userEmail = localStorage.getItem("loggedUser");
+
+fetch(`/roads/route?from=${from}&to=${to}&email=${userEmail}`)
+.then(res=>{
+if(!res.ok) throw new Error("Route not found");
+return res.json();
+})
+.then(async data=>{
+
+document.getElementById("routeLoading").style.display="none";
+
+let route=data.route;
+let distance=data.totalDistance;
+
+let startCity=route[0];
+let endCity=route[route.length-1];
+
+let userEmail = localStorage.getItem("loggedUser");
+
+fetch("/roads/history",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+fromCity:startCity,
+toCity:endCity,
+userEmail:userEmail
+})
+});
+let weather = await loadWeather(endCity);
+let time = distance/60;
+
+let traffic=document.getElementById("trafficToggle").checked;
+let departure=document.getElementById("departureTime").value;
+
+if(traffic){
+
+if(departure==="morning"){
+time=time*1.4;
+}
+
+else if(departure==="afternoon"){
+time=time*1.1;
+}
+
+else if(departure==="evening"){
+time=time*1.6;
+}
+
+else if(departure==="night"){
+time=time*0.9;
+}
+
+}
+time=time.toFixed(1);
+
+document.getElementById("routeResult").innerHTML=
+
+`<div class="card">
+
+<b>Route:</b> ${route.join(" → ")}<br>
+<b>Distance:</b> ${distance} km<br>
+<b>Estimated Time:</b> ${time} hrs
+
+<br><br>
+
+<div class="button-row">
+<button onclick="startNavigation()">🚗 Start Navigation</button>
+<button onclick="shareRoute('${startCity}','${endCity}')">🔗 Share Route</button>
+<button onclick="saveFavourite('${startCity}','${endCity}')">❤️ Save</button>
+</div>
+
+</div>`;
+let card=document.getElementById("routeInfoCard");
+
+card.style.display="block";
+
+setTimeout(()=>{
+card.classList.add("show");
+},10);
+
+document.getElementById("routeDetails").innerHTML = `
+<h4>🚗 ${startCity} → ${endCity}</h4>
+
+<div class="routeStat">
+📏 <b>Distance:</b> ${distance} km
+</div>
+
+<div class="routeStat">
+⏱ <b>ETA:</b> ${time} hrs
+</div>
+
+<div class="routeStat">
+🌤 <b>Weather:</b> ${weather}
+</div>
+
+<div class="routeButtons">
+<button onclick="startNavigation()">🚗 Navigate</button>
+<button onclick="shareRoute('${startCity}','${endCity}')">🔗 Share</button>
+</div>
+`;
+drawRoute(route);
+});
+}
+/* START NAVIGATION */
+function startNavigation(){
+if(routeCoords.length===0){
+showToast("No route available");
+return;
+}
+if(carMarker) map.removeLayer(carMarker);
+carMarker=L.marker(routeCoords[0],{icon:carIcon}).addTo(map);
+carMarker.bindPopup("🚗 Navigation Start").openPopup();
+/* show floating panel */
+document.getElementById("navPanel").style.display="block";
+/* show first instruction */
+if(savedSteps.length>0){
+document.getElementById("navInstruction").innerText =
+savedSteps[0].instruction;
+}
+showDirections(savedSteps);
+}
+/* CLEAR ROUTE */
+function clearRoute(){
+if(currentRoute) map.removeLayer(currentRoute);
+if(startMarker) map.removeLayer(startMarker);
+if(endMarker) map.removeLayer(endMarker);
+if(carMarker) map.removeLayer(carMarker);
+routeCoords=[];
+document.getElementById("routeResult").innerHTML="";
+document.getElementById("directionsPanel").innerHTML="";
+document.getElementById("routeInfoCard").style.display="none";
+document.getElementById("navPanel").style.display="none";
+}
+/* TURN BY TURN DIRECTIONS */
+function showDirections(steps){
+let html="<h3>🧭 Directions</h3>";
+steps.forEach((s,i)=>{
+html+=`<div class="history-item">
+${i+1}. ${s.instruction}
+</div>`;
+});
+document.getElementById("directionsPanel").innerHTML=html;
+}
+/* DASHBOARD */
+function openMyTravel(){
+let email = localStorage.getItem("loggedUser");
+
+if(!email){
+showToast("⚠ Please login to access My Travel");
+openAuth();
+return;
+}
+let html=`
+
+<h3>📍 Bucket List</h3>
+<input id="placeInput" placeholder="Add place">
+<button onclick="addPlace()">Add Place</button>
+<div id="placesList"></div>
+
+<h3>⭐ Reviews</h3>
+<div class="ratingStars">
+<span onclick="setRating(1)">★</span>
+<span onclick="setRating(2)">★</span>
+<span onclick="setRating(3)">★</span>
+<span onclick="setRating(4)">★</span>
+<span onclick="setRating(5)">★</span>
+</div>
+<textarea id="reviewText" placeholder="Write review"></textarea>
+<button onclick="addReview()">Submit Review</button>
+<div id="reviewList"></div>
+
+<h3>🗺 Saved Routes</h3>
+<button onclick="toggleRoutes()">Show Saved Routes</button>
+<div id="savedRoutes" style="display:none"></div>
+
+<h3>❤️ Favourite Routes</h3>
+<button onclick="loadFavouriteRoutes()">Show Favourite Routes</button>
+<div id="favRoutes"></div>
+
+`;
+
+document.getElementById("sidebarContent").innerHTML=html;
+
+loadPlaces();
+loadReviews();
+loadRouteHistory();
+loadFavouriteRoutes();
+
+}
+/* BUCKET LIST */
+function addPlace(){
+
+let email = localStorage.getItem("loggedUser");
+
+if(!email){
+showToast("⚠ Please login to save places");
+openAuth();
+return;
+}
+
+let place=document.getElementById("placeInput").value;
+
+fetch("/bucket/add",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+place:place,
+userEmail:email
+})
+})
+.then(()=>{
+document.getElementById("placeInput").value="";
+loadPlaces();
+});
+}
+function loadPlaces(){
+
+let email = localStorage.getItem("loggedUser");
+
+fetch(`/bucket/list?email=${email}`)
+.then(res=>res.json())
+.then(data=>{
+
+let html="";
+
+data.forEach(p=>{
+html+=`<div class="history-item">📍 ${p.place}</div>`;
+});
+
+document.getElementById("placesList").innerHTML=html;
+
+});
+
+}
+/* REVIEWS */
+function addReview(){
+
+let email = localStorage.getItem("loggedUser");
+
+if(!email){
+showToast("⚠ Please login before submitting a review");
+openAuth();
+return;
+}
+
+let review=document.getElementById("reviewText").value;
+
+fetch("/reviews/add",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+reviewText:review,
+rating:currentRating,
+userEmail:email
+})
+})
+.then(()=>{
+document.getElementById("reviewText").value="";
+currentRating=0;
+loadReviews();
+});
+}
+
+function loadReviews(){
+
+let email = localStorage.getItem("loggedUser");
+
+fetch(`/reviews/list?email=${email}`)
+.then(res=>res.json())
+.then(data=>{
+
+let html="";
+
+data.forEach(r=>{
+
+let stars="";
+
+for(let i=0;i<r.rating;i++){
+stars+="★";
+}
+
+html+=`
+<div class="history-item">
+<div style="color:#facc15">${stars}</div>
+${r.reviewText}
+</div>
+`;
+
+});
+
+document.getElementById("reviewList").innerHTML=html;
+
+});
+
+}
+
+/* NAVIGATION LINKS */
+
+function openRoutePlanner(){
+location.reload();
+}
+
+function openContact(){
+
+let loggedUser = localStorage.getItem("loggedUser");
+
+if(!loggedUser){
+showToast("⚠ Please login first");
+openAuth();
+return;
+}
+
+document.getElementById("contactModal").style.display="flex";
+
+/* auto fill email */
+document.getElementById("contactEmail").value = loggedUser;
+
+}
+
+function closeContact(){
+document.getElementById("contactModal").style.display="none";
+}
+function sendMessage(){
+
+let loggedUser = localStorage.getItem("loggedUser");
+
+if(!loggedUser){
+showToast("⚠ Please login before sending a message");
+openAuth();
+return;
+}
+
+let name=document.getElementById("contactName").value;
+let message=document.getElementById("contactMessage").value;
+
+/* email auto filled from logged in user */
+let email = loggedUser;
+
+if(name==="" || message===""){
+showToast("⚠ Please fill all fields");
+return;
+}
+
+fetch("/contact/send",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+name:name,
+email:email,
+message:message
+})
+})
+.then(res=>res.text())
+.then(data=>{
+
+document.getElementById("contactSuccess").innerText="✅ Message sent successfully!";
+showToast("Message sent successfully");
+
+document.getElementById("contactName").value="";
+document.getElementById("contactMessage").value="";
+
+})
+.catch(()=>{
+showToast("⚠ Failed to send message");
+});
+
+}
+function loadRouteHistory(){
+
+let userEmail = localStorage.getItem("loggedUser");
+
+if(!userEmail){
+showToast("⚠ Please login to view saved routes");
+openAuth();
+return;
+}
+
+fetch(`/roads/history?email=${userEmail}`)
+.then(res=>res.json())
+.then(data=>{
+
+let html="";
+
+data.reverse().forEach(r=>{
+
+html+=`
+<div class="history-item"
+onclick="loadPastRoute('${r.fromCity}','${r.toCity}')">
+${r.fromCity} → ${r.toCity}
+</div>
+`;
+
+});
+
+document.getElementById("savedRoutes").innerHTML=html;
+
+});
+
+}
+
+function setRating(r){
+
+currentRating=r;
+
+let stars=document.querySelectorAll(".ratingStars span");
+
+stars.forEach((s,i)=>{
+s.style.color = i < r ? "#facc15" : "#6b7280";
+});
+
+}
+function toggleRoutes(){
+
+let routes=document.getElementById("savedRoutes");
+
+if(routes.style.display==="none"){
+routes.style.display="block";
+}else{
+routes.style.display="none";
+}
+
+}
+let isSignup=false;
+
+function openAuth(){
+document.getElementById("authModal").style.display="flex";
+}
+
+function closeAuth(){
+document.getElementById("authModal").style.display="none";
+}
+
+function toggleAuth(){
+
+isSignup=!isSignup;
+
+document.getElementById("authTitle").innerText=isSignup?"Sign Up":"Login";
+
+document.getElementById("authName").style.display=isSignup?"block":"none";
+
+document.getElementById("toggleAuth").innerText=
+isSignup?"Already have an account? Login":"Create account";
+
+}
+
+function submitAuth(){
+
+let name=document.getElementById("authName").value.trim();
+let email=document.getElementById("authEmail").value.trim();
+let password=document.getElementById("authPassword").value.trim();
+
+/* SIGNUP */
+if(isSignup){
+
+if(name==="" || email==="" || password===""){
+showToast("⚠ Please fill all fields");
+return;
+}
+
+fetch("/auth/register",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+username:name,
+email:email,
+password:password
+})
+})
+.then(res=>res.text())
+.then(msg=>{
+showToast(msg);
+closeAuth();
+})
+.catch(()=>{
+showToast("Registration failed");
+});
+
+}
+
+/* LOGIN */
+else{
+
+if(email==="" || password===""){
+showToast("⚠ Enter email and password");
+return;
+}
+
+fetch("/auth/login",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+email:email,
+password:password
+})
+})
+.then(res=>res.text())
+.then(msg=>{
+
+if(msg.includes("Successfully")){
+localStorage.setItem("loggedUser", email);
+
+showToast("✅ Logged in successfully");
+
+document.getElementById("authButton").style.display="none";
+document.getElementById("logoutButton").style.display="inline";
+
+let emailDisplay=document.getElementById("userEmailDisplay");
+emailDisplay.innerText="👤 " + email;
+emailDisplay.style.display="inline";
+
+closeAuth();
+
+document.getElementById("authButton").style.display="none";
+document.getElementById("logoutButton").style.display="inline";
+
+closeAuth();
+
+}else{
+showToast("❌ Incorrect email or password");
+}
+
+})
+.catch(()=>{
+showToast("⚠ Server error");
+});
+
+}
+
+}
+
+function toggleTheme(){
+
+document.body.classList.toggle("light-mode");
+
+let mode=document.body.classList.contains("light-mode");
+
+localStorage.setItem("theme",mode?"light":"dark");
+
+}
+async function loadWeather(city){
+
+let apiKey="b099dadfeed2fad9b0744f5bbba87afe";
+
+let url=`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+
+try{
+
+let res = await fetch(url);
+let data = await res.json();
+
+if(!data.main){
+return "Unavailable";
+}
+
+let temp = data.main.temp;
+let weather = data.weather[0].main;
+
+return `${temp}°C ${weather}`;
+
+}catch(e){
+
+return "Unavailable";
+
+}
+
+}
+function shareRoute(from,to){
+
+let url = `${window.location.origin}?from=${from}&to=${to}`;
+
+navigator.clipboard.writeText(url);
+
+showToast("🔗 Route link copied to clipboard");
+
+}
+window.addEventListener("load", function(){
+
+let params = new URLSearchParams(window.location.search);
+
+let from = params.get("from");
+let to = params.get("to");
+
+if(from && to){
+
+document.getElementById("from").value = from;
+document.getElementById("to").value = to;
+
+findRoute();
+
+}
+
+});
+function updateTimeLabel(){
+
+let hour = document.getElementById("timeSlider").value;
+
+hour = hour.toString().padStart(2,'0');
+
+document.getElementById("timeLabel").innerText = "🕒 " + hour + ":00";
+
+}
+function showToast(message){
+
+let toast=document.getElementById("toast");
+
+toast.innerText=message;
+
+toast.classList.add("show");
+
+setTimeout(()=>{
+toast.classList.remove("show");
+},3000);
+
+}
+function logout(){
+
+localStorage.removeItem("loggedUser");
+
+document.getElementById("authButton").style.display="inline";
+document.getElementById("logoutButton").style.display="none";
+
+document.getElementById("userEmailDisplay").style.display="none";
+
+showToast("🚪 Logged out successfully");
+
+}
+function saveFavourite(from,to){
+
+let email = localStorage.getItem("loggedUser");
+
+if(!email){
+showToast("⚠ Please login to save routes");
+openAuth();
+return;
+}
+
+fetch("/favourites/add",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+fromCity:from,
+toCity:to,
+userEmail:email
+})
+})
+.then(res => res.text())
+.then(msg => {
+
+if(msg.includes("already")){
+showToast("⭐ Route already in favourites");
+}else{
+showToast("❤️ Route saved to favourites");
+loadFavouriteRoutes();
+}
+
+})
+.catch(() => {
+
+showToast("⚠ Could not save route");
+
+});
+
+}
+function removeFavourite(id){
+
+fetch(`/favourites/remove?id=${id}`,{
+method:"DELETE"
+})
+.then(res=>{
+
+if(!res.ok){
+throw new Error("Delete failed");
+}
+
+showToast("❌ Removed from favourites");
+
+loadFavouriteRoutes();
+
+})
+.catch(()=>{
+showToast("⚠ Could not remove route");
+});
+
+}
+function loadFavouriteRoutes(){
+
+let email = localStorage.getItem("loggedUser");
+
+if(!email){
+showToast("⚠ Please login to view favourite routes");
+openAuth();
+return;
+}
+
+fetch(`/favourites/list?email=${email}`)
+.then(res => {
+
+if(!res.ok){
+throw new Error("Fetch failed");
+}
+
+return res.json();
+
+})
+.then(data => {
+
+let html="";
+
+if(data.length===0){
+
+html=`<div class="history-item">No favourite routes yet </div>`;
+
+}else{
+
+data.forEach(r=>{
+
+html+=`
+<div class="history-item">
+
+<span onclick="loadPastRoute('${r.fromCity}','${r.toCity}')">
+❤️ ${r.fromCity} → ${r.toCity}
+</span>
+
+<button onclick="removeFavourite(${r.id})"
+style="float:right;background:#ef4444;padding:5px 8px;border-radius:6px;">
+Remove
+</button>
+
+</div>
+`;
+
+});
+}
+
+document.getElementById("favRoutes").innerHTML=html;
+
+})
+.catch(() => {
+
+document.getElementById("favRoutes").innerHTML=
+`<div class="history-item">Could not load favourite routes</div>`;
+
+});
+
+}
+</script>
+
+
+<div id="contactModal" class="contact-overlay">
+
+<div class="contact-box">
+
+<h2>📩 Contact Us</h2>
+
+<input id="contactName" placeholder="Your Name">
+
+<input id="contactEmail" placeholder="Your Email" disabled>
+
+<textarea id="contactMessage" placeholder="Your Message"></textarea>
+
+<button onclick="sendMessage()">Send Message</button>
+
+<p id="contactSuccess" class="successMsg"></p>
+
+<button class="closeBtn" onclick="closeContact()">Close</button>
+
+</div>
+
+</div>
+
+<div id="authModal" class="contact-overlay">
+
+<div class="contact-box">
+
+<h2 id="authTitle">Login</h2>
+
+<input id="authName" placeholder="Name" style="display:none">
+
+<input id="authEmail" placeholder="Email">
+
+<input id="authPassword" type="password" placeholder="Password">
+
+<button onclick="submitAuth()">Continue</button>
+
+<p style="text-align:center;">
+<span id="toggleAuth" onclick="toggleAuth()" style="cursor:pointer;color:#60a5fa;">
+Create account
+</span>
+</p>
+
+<button class="closeBtn" onclick="closeAuth()">Close</button>
+
+</div>
+
+</div>
+<div id="toast"></div>
+</body>
+</html>
